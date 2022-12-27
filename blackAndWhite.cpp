@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <malloc.h>
-#include <iostream>
+#include "iostream"
 #include <string.h>
 
 using namespace std;
@@ -110,8 +110,13 @@ void calculateBnWValue(Image * img){
 }
 
 // Loads a BMP image from a file
-void loadBMP(Image * img, char * fileName){
-    
+void loadBMP(Image * img, char * fileName){\
+
+    int bmpDataOffset, bmpHeight, bmpWidth, bmpBitCount;
+	int y;
+	int x;
+	int	residue;
+
     // Open the BMP file
     FILE *bitmapFile;
     bitmapFile = fopen(fileName, "rb");
