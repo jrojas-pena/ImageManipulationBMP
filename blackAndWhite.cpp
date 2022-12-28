@@ -167,41 +167,86 @@ void loadBMP(Image * img, char * fileName){\
 
 // Saves a BMP image to a file
 void saveBMP(Image * img, char * fileName){
-    
-    // Open the output file
-    FILE *outputFile;
-    outputFile = fopen(fileName, "wb");
-    if (outputFile == NULL) {
-        printf("It was not possible to save the file: %s\n", fileName);
+   // Append "BlackAndWhite.bmp" to the end of fileName
+    //*fileName = 'output.bmp';
+    unsigned char bfType[2];
+    unsigned int bfSize, bfReserved, bfOffBits, biSize, biWidth, biHeight, biCompression, biSizeImage, biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant;
+    unsigned short biPlanes, biBitCount;
+    FILE * outputFile;
+    int y, x;
+    int fill = 0;
+
+    // Calculate the leftover bits in the bmp, which remain when forcing 32-bit words
+    int residue = (4 - (img->width) % 4) & 3; 
+
+    // Type of Bitmap
+    bfType[2];       
+    bfType[0] = 'B';
+    bfType[1] = 'M';
+    int width = img->bitCount == 32? (img->width) / 4:(img->width) / 3;
+    // Total size of the file in bytes
+    bfSize = 54 + img->height * (width) * sizeof(unsigned char);       
+    // Reserved for unspecified use
+    bfReserved = 0;   
+    // Total size of the header
+    bfOffBits = 54;    
+    // Size of the Bitmap information header
+    biSize = 40;      
+    // Width of the Bitmap in pixels
+    biWidth = width;     
+    // Height of the Bitmap in pixels
+    biHeight = img->height;    
+    // Number of planes
+    biPlanes = 1;    
+    // Bits per pixel (1,4,8,16,24 or 32)
+    biBitCount = img->bitCount;  
+    // Type of compression
+    biCompression = 0;   
+    // Size of the image (without the header) in bits
+    biSizeImage = img->height * img->width;   
+    // Target display resolution in the x-coordinate
+    biXPelsPerMeter = 2835; 
+    // Target display resolution in the y-coordinate
+    biYPelsPerMeter = 2835; 
+    // Number of colors used (only for paletted Bitmaps)
+    biClrUsed = 0;       
+    // Number of important colors (only for paletted Bitmaps)
+    biClrImportant = 0;  
+
+    // Open a file to write the Bitmap to in binary mode
+    outputFile = fopen(fileName, "w+b"); 
+    if (outputFile == 0) {
+        printf("It was not possible to create the file: %s\n", fileName);
         exit(-1);
     }
 
-    // Calculate the image size in bytes
-    int imageSize = img->height * img->width;
+    // Write the entire header to the file. Total of 54 bytes.
+    fwrite(bfType, sizeof(char), 2, outputFile); 
+    fwrite(&bfSize, sizeof(int), 1, outputFile);
+    fwrite(&bfReserved, sizeof(int), 1, outputFile);
+    fwrite(&bfOffBits, sizeof(int), 1, outputFile);
+    fwrite(&biSize, sizeof(int), 1, outputFile);
+    fwrite(&biWidth, sizeof(int), 1, outputFile);
+    fwrite(&biHeight, sizeof(int), 1, outputFile);
+    fwrite(&biPlanes, sizeof(short), 1, outputFile);
+    fwrite(&biBitCount, sizeof(short), 1, outputFile);
+    fwrite(&biCompression, sizeof(int), 1, outputFile);
+    fwrite(&biSizeImage, sizeof(int), 1, outputFile);
+    fwrite(&biXPelsPerMeter, sizeof(int), 1, outputFile);
+    fwrite(&biYPelsPerMeter, sizeof(int), 1, outputFile);
+    fwrite(&biClrUsed, sizeof(int), 1, outputFile);
+    fwrite(&biClrImportant, sizeof(int), 1, outputFile);
 
-    // Declare variables for the BMP file header
-    unsigned char bmpFileHeader[14] = {'B','M', 0,0,0,0, 0,0, 0,0, 54,0,0,0};
-    unsigned char bmpInfoHeader[40] = {40,0,0,0, 0,0,0,0, 0,0,0,0, 1,0, 24,0};
-    unsigned char bmpPad[3] = {0,0,0};
+    // Write the RGB data of each pixel of the image to the output file
+    for (y = 0; y < img->height; y++) {
+		for (x = 0; x < img->width; x++) {
+			int pos = y * img->width + x;
+			fwrite(&img->information[pos], sizeof(unsigned char), 1, outputFile);
+		}
+		fwrite(&fill, sizeof(unsigned char), residue, outputFile);
+	}
 
-    // Write the BMP file header to the output file
-    fwrite(bmpFileHeader, 1, 14, outputFile);
-
-    // Write the BMP info header to the output file
-    fwrite(bmpInfoHeader, 1, 40, outputFile);
-
-    // Write the pixel data to the output file
-    fwrite(img->information, 1, imageSize, outputFile);
-
-    // Calculate the number of padding bytes needed
-    int padding = (4 - (imageSize) % 4) & 3;
-
-    // Write the padding bytes to the output file
-    for (int i = 0; i < padding; i++) {
-        fwrite(bmpPad, 1, 1, outputFile);
-    }
-
-    // Close the output file
     fclose(outputFile);
 }
+
 
